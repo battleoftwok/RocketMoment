@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import timedelta
 import matplotlib.pyplot as plt
+import os
 
 
 @dataclass
@@ -64,7 +65,7 @@ def update_data(data: dict, cur_time: float) -> None:
 
 
 def save(legend, data):
-    with open("results.csv", 'w', encoding='utf-8') as file:
+    with open(f"{os.path.abspath(os.path.curdir)}/results.csv", 'w', encoding='utf-8') as file:
 
         file.write(';'.join(legend) + '\n')
 
@@ -83,7 +84,7 @@ def plot(data: dict):
         axs[item].plot(abscissa, data[key], colour[item])
         axs[item].set_title(key)
 
-    plt.savefig("fig.jpg")
+    plt.savefig(f"{os.path.abspath(os.path.curdir)}/fig.jpg")
     plt.show()
 
 
@@ -157,6 +158,7 @@ if __name__ == '__main__':
     converted_data = [[calc_data[key][i] for key in calc_data.keys()] for i in range(len(calc_data['Mz']))]
 
     converted_data.pop(0)
+
     save(calc_data.keys(), converted_data)
 
     plot(calc_data)
