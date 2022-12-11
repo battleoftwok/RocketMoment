@@ -1,12 +1,10 @@
 from dataclasses import dataclass, field
 from datetime import timedelta
 import matplotlib.pyplot as plt
-import os
 
 
 @dataclass
 class ConstParams:
-
     """
     Константы, используемые в расчёте
     """
@@ -40,17 +38,18 @@ def plot(data: dict):
         axs[item].plot(abscissa, data[key], colour[item])
         axs[item].set_title(key)
 
-    plt.savefig(f"{os.path.abspath(os.path.curdir)}/fig.jpg")
+    plt.savefig(f"fig.jpg")
     plt.show()
 
 
 @dataclass
 class Data:
     # todo: названия физических величин!
-    cur_time_step: float = 0.0
+    time: timedelta = field(default=timedelta(milliseconds=0))
+    Iteration: int = 0
     jt: float = 38.84185
     airplane_inertia: float = 110.134
-    r_2: float = 0.0
+    inertia_radius: float = 0.0
     inertia_moment: float = jt + airplane_inertia
     angular_acceleration: float = 0.0
     angular_velocity: float = 0.0
@@ -60,7 +59,6 @@ class Data:
     velocity: float = 0.0
     lp: float = 0.0
     rocket_moment: float = 0.0
-    time: timedelta = field(default=timedelta(milliseconds=0))
     counter_start_rocket: int = 0
     cur_weight_rocket: float = 0
     full_weight: float = 50.0
@@ -71,8 +69,8 @@ class Data:
 
     def recalc_data(self, current_time: timedelta):
         self.time = current_time
-        self.cur_time_step = current_time.total_seconds()
-        self.r_2 = 0.0
+        self.Iteration = int(1000 * current_time.total_seconds())
+        self.inertia_radius = 0.0
         self.jt = self.calc_jt()
         self.airplane_inertia = self.calc_airplane_inertia()
         self.inertia_moment = self.jt + self.airplane_inertia
@@ -115,16 +113,11 @@ class Data:
 
 @dataclass(repr=True)
 class Rocket:
+    coord_x: list = field()
+    coord_y: float
     time_start: timedelta
     flight_duration: timedelta
     weight: float = 15
-
-    # todo: по какому принципу происходит изменение coord_x и coord_y?
-    coord_x = [0.055, 0.138, 0.221, 0.304, 0.387, 0.47,
-               0.553, 0.636, 0.719, 0.802, 0.885, 0.968, 1.051,
-               1.134, 1.217, 1.3]
-
-    coord_y = 0.152
 
     def consider_moment(self, calc_params: Data, current_time: timedelta):
 
@@ -132,9 +125,11 @@ class Rocket:
             calc_params.cur_weight_rocket = self.weight
 
         time_diff = current_time - self.time_start
-        calc_params.r_2 = self.coord_y ** 2 + self.coord_x[int(1000 * time_diff.total_seconds())] ** 2
+        calc_params.inertia_radius = self.coord_y ** 2 + self.coord_x[int(1000 * time_diff.total_seconds())] ** 2
+
         calc_params.jt = (calc_data.full_weight - calc_data.counter_start_rocket *
-                          (CONST_PARAMS.var_part_weight + self.weight)) * calc_params.r_2
+                          (CONST_PARAMS.var_part_weight + self.weight)) * calc_params.inertia_radius
+
         calc_params.inertia_moment = calc_params.jt + calc_params.airplane_inertia
 
         if self.time_start + self.flight_duration == current_time:
@@ -144,8 +139,19 @@ class Rocket:
 if __name__ == '__main__':
 
     rockets = [
-        Rocket(timedelta(seconds=4), timedelta(milliseconds=15), weight=15),
-        Rocket(timedelta(seconds=8), timedelta(milliseconds=15), weight=15)
+        Rocket(coord_x=[0.055, 0.138, 0.221, 0.304, 0.387, 0.47,
+                        0.553, 0.636, 0.719, 0.802, 0.885, 0.968,
+                        1.051, 1.134, 1.217, 1.3],
+               coord_y=.152,
+               time_start=timedelta(seconds=4),
+               flight_duration=timedelta(milliseconds=15)),
+
+        Rocket(coord_x=[0.075, 0.148, 0.221, 0.294, 0.367, 0.44,
+                        0.513, 0.586, 0.659, 0.732, 0.805, 0.878,
+                        0.951, 1.024, 1.097, 1.17],
+               coord_y=.099,
+               time_start=timedelta(seconds=8),
+               flight_duration=timedelta(milliseconds=15))
     ]
 
     flight_time = timedelta(seconds=10)
@@ -153,14 +159,17 @@ if __name__ == '__main__':
 
     calc_data = Data()
 
-    while current <= flight_time:
+    with open("result.csv", "w", encoding="utf-8") as file:
 
-        calc_data.recalc_data(current)
+        file.write(";".join(map(str, calc_data.__dict__.keys())) + "\n")
 
-        for rocket in rockets:
-            if rocket.time_start <= current <= rocket.time_start + rocket.flight_duration:
-                rocket.consider_moment(calc_data, current)
-                print(111)
+        while current <= flight_time:
 
-        print(calc_data.jt, calc_data.airplane_inertia, calc_data.inertia_moment)
-        current = current + STEP
+            calc_data.recalc_data(current)
+
+            for rocket in rockets:
+                if rocket.time_start <= current <= rocket.time_start + rocket.flight_duration:
+                    rocket.consider_moment(calc_data, current)
+
+            file.write(";".join(map(str, calc_data.__dict__.values())) + "\n")
+            current = current + STEP
