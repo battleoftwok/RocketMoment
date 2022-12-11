@@ -3,6 +3,9 @@ from datetime import timedelta
 import matplotlib.pyplot as plt
 
 
+SEPARATOR = ";"
+
+
 @dataclass
 class ConstParams:
     """
@@ -13,14 +16,14 @@ class ConstParams:
     m_alpha_z: float = -.0033
     m_delta_z: float = -.0025
     radius: float = 57.3
-    s_wing: float = 5.34
+    wing_area: float = 5.34
     q: float = 1236.25
     b_a: float = 1.684
     n_x: float = -7.0
     var_part_weight: float = 1.3
     airplane_wight: float = 132.55
-    R_la: float = field(default=0, init=False)
-    R_jt: float = field(default=0, init=False)
+    airplane_inertia_radius: float = field(default=0, init=False)
+    pipe_inertia_radius: float = field(default=0, init=False)
 
 
 CONST_PARAMS = ConstParams()
@@ -64,8 +67,8 @@ class Data:
     full_weight: float = 50.0
 
     def __post_init__(self):
-        CONST_PARAMS.R_la = (self.airplane_inertia / CONST_PARAMS.airplane_wight) ** .5
-        CONST_PARAMS.R_jt = (self.jt / self.full_weight) ** .5
+        CONST_PARAMS.airplane_inertia_radius = (self.airplane_inertia / CONST_PARAMS.airplane_wight) ** .5
+        CONST_PARAMS.pipe_inertia_radius = (self.jt / self.full_weight) ** .5
 
     def recalc_data(self, current_time: timedelta):
         self.time = current_time
@@ -84,19 +87,19 @@ class Data:
         self.rocket_moment = 0
 
     def calc_airplane_inertia(self):
-        return CONST_PARAMS.R_la ** 2 * (CONST_PARAMS.airplane_wight - self.counter_start_rocket *
-                                         (self.cur_weight_rocket + CONST_PARAMS.var_part_weight))
+        return CONST_PARAMS.airplane_inertia_radius ** 2 * (CONST_PARAMS.airplane_wight - self.counter_start_rocket *
+                                                            (self.cur_weight_rocket + CONST_PARAMS.var_part_weight))
 
     def calc_jt(self):
-        return CONST_PARAMS.R_jt ** 2 * (self.full_weight - self.counter_start_rocket *
-                                         (self.cur_weight_rocket + CONST_PARAMS.var_part_weight))
+        return CONST_PARAMS.pipe_inertia_radius ** 2 * (self.full_weight - self.counter_start_rocket *
+                                                        (self.cur_weight_rocket + CONST_PARAMS.var_part_weight))
 
     def calc_airplane_moment(self) -> float:
         return self.rocket_moment + \
             (self.attack_angle * CONST_PARAMS.m_alpha_z *
-             CONST_PARAMS.s_wing * CONST_PARAMS.q * CONST_PARAMS.b_a) / CONST_PARAMS.gravity + \
+             CONST_PARAMS.wing_area * CONST_PARAMS.q * CONST_PARAMS.b_a) / CONST_PARAMS.gravity + \
             (self.elevator_angle * CONST_PARAMS.m_delta_z *
-             CONST_PARAMS.s_wing * CONST_PARAMS.q * CONST_PARAMS.b_a) / CONST_PARAMS.gravity
+             CONST_PARAMS.wing_area * CONST_PARAMS.q * CONST_PARAMS.b_a) / CONST_PARAMS.gravity
 
     def calc_elevator_angle(self) -> float:
         return - CONST_PARAMS.m_alpha_z * self.attack_angle / CONST_PARAMS.m_delta_z
@@ -161,7 +164,7 @@ if __name__ == '__main__':
 
     with open("result.csv", "w", encoding="utf-8") as file:
 
-        file.write(";".join(map(str, calc_data.__dict__.keys())) + "\n")
+        file.write(SEPARATOR.join(map(str, calc_data.__dict__.keys())) + "\n")
 
         while current <= flight_time:
 
@@ -171,5 +174,5 @@ if __name__ == '__main__':
                 if rocket.time_start <= current <= rocket.time_start + rocket.flight_duration:
                     rocket.consider_moment(calc_data, current)
 
-            file.write(";".join(map(str, calc_data.__dict__.values())) + "\n")
+            file.write(SEPARATOR.join(map(str, calc_data.__dict__.values())) + "\n")
             current = current + STEP
