@@ -27,6 +27,7 @@ class ConstParams:
 @dataclass
 class Data:
     rockets_set: list = field(repr=False)
+    millisecond: float = 0
     time_point: timedelta = timedelta(seconds=0)
     rocket_launch_counter: int = 0
     airplane_moment_inertia_radius: float = 0.911529735
@@ -46,6 +47,7 @@ class Data:
 
     def recalc_data(self, time_point: timedelta):
         self.time_point = time_point
+        self.millisecond = 1000 * self.time_point.total_seconds()
         self.airplane_moment_inertia_radius = 0.911529735
         self.airplane_moment_inertia = self.calc_airplane_moment_inertia()
         self.tube_moment_inertia_radius = 0.881383571
@@ -157,7 +159,7 @@ if __name__ == '__main__':
 
     with open("result.csv", "w", encoding="utf-8") as file:
 
-        print(SEPARATOR.join(map(str, data.__dict__.keys())), file=file)
+        print(SEPARATOR.join(map(str, data.__dict__.keys())).replace("_", " "), file=file)
 
         while current <= flight_time:
 
