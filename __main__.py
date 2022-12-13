@@ -98,7 +98,7 @@ class Rocket:
     coord_x: list
     coord_y: float
     time_start: timedelta
-    flight_duration: timedelta
+    flight_duration: timedelta = timedelta(milliseconds=15)
     weight: float = 15
 
     def consider_moment(self, cur_data: Data, time: timedelta):
@@ -113,6 +113,7 @@ class Rocket:
             cur_data.rocket_way += cur_data.rocket_velocity * STEP.total_seconds()
 
         cur_data.time_point = time
+        cur_data.millisecond = 1000 * cur_data.time_point.total_seconds()
         time_diff = time - self.time_start
         cur_data.tube_moment_inertia_radius = self.coord_y ** 2 + self.coord_x[int(1000 * time_diff.total_seconds())] ** 2
         cur_data.rocket_moment_inertia = cur_data.tube_moment_inertia_radius * CONST_PARAMS.MPADS_weight
@@ -139,15 +140,13 @@ if __name__ == '__main__':
                         0.553, 0.636, 0.719, 0.802, 0.885, 0.968,
                         1.051, 1.134, 1.217, 1.3],
                coord_y=.152,
-               time_start=timedelta(milliseconds=5),
-               flight_duration=timedelta(milliseconds=15)),
+               time_start=timedelta(milliseconds=5)),
 
         Rocket(coord_x=[0.075, 0.148, 0.221, 0.294, 0.367, 0.44,
                         0.513, 0.586, 0.659, 0.732, 0.805, 0.878,
                         0.951, 1.024, 1.097, 1.17],
                coord_y=.099,
-               time_start=timedelta(milliseconds=30),
-               flight_duration=timedelta(milliseconds=15))
+               time_start=timedelta(milliseconds=30))
     ]
 
     flight_time = timedelta(seconds=10)
