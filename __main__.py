@@ -172,3 +172,6 @@ if __name__ == '__main__':
 
             print(SEPARATOR.join(map(str, data.__dict__.values())).replace(".", ","), file=file)
             current = current + STEP
+
+    print("Program completed!")
+    input("Press Enter to exit... ")
