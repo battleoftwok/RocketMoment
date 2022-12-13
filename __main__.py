@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field
-from datetime import timedelta
+from dataclasses import dataclass
+from datetime import timedelta, datetime
 
 SEPARATOR = ";"
 
@@ -26,10 +26,10 @@ class ConstParams:
 
 @dataclass
 class Data:
-    rockets_set: list = field(repr=False)
     millisecond: float = 0
     time_point: timedelta = timedelta(seconds=0)
     rocket_launch_counter: int = 0
+    weight_cur_rocket: float = 0
     airplane_moment_inertia_radius: float = 0.911529735
     airplane_moment_inertia: float = 0
     tube_moment_inertia_radius: float = 0.881383571
@@ -63,15 +63,15 @@ class Data:
         self.rocket_moment = 0
         self.general_moment = self.calc_general_moment()
 
-    def calc_airplane_moment_inertia(self):
+    def calc_airplane_moment_inertia(self,):
         return (self.airplane_moment_inertia_radius ** 2) *\
             (CONST_PARAMS.airplane_weight - self.rocket_launch_counter *
-             (CONST_PARAMS.var_part_weight + self.rockets_set[self.rocket_launch_counter - 1].weight))
+             (CONST_PARAMS.var_part_weight + self.weight_cur_rocket))
 
     def calc_rocket_moment_inertia(self):
         return (self.tube_moment_inertia_radius ** 2) * \
             (CONST_PARAMS.MPADS_weight - self.rocket_launch_counter *
-             (CONST_PARAMS.var_part_weight + self.rockets_set[self.rocket_launch_counter - 1].weight))
+             (CONST_PARAMS.var_part_weight + self.weight_cur_rocket))
 
     def calc_airplane_acceleration(self):
         return (57.3 * self.general_moment * CONST_PARAMS.gravity) / self.general_moment_inertia
@@ -115,7 +115,9 @@ class Rocket:
         cur_data.time_point = time
         cur_data.millisecond = 1000 * cur_data.time_point.total_seconds()
         time_diff = time - self.time_start
-        cur_data.tube_moment_inertia_radius = self.coord_y ** 2 + self.coord_x[int(1000 * time_diff.total_seconds())] ** 2
+        cur_data.tube_moment_inertia_radius = self.coord_y ** 2 + \
+                                              self.coord_x[int(1000 * time_diff.total_seconds())] ** 2
+        cur_data.weight_cur_rocket = self.weight
         cur_data.rocket_moment_inertia = cur_data.tube_moment_inertia_radius * CONST_PARAMS.MPADS_weight
         cur_data.airplane_moment_inertia = cur_data.calc_airplane_moment_inertia()
         cur_data.airplane_acceleration = cur_data.calc_airplane_acceleration()
@@ -140,23 +142,24 @@ if __name__ == '__main__':
                         0.553, 0.636, 0.719, 0.802, 0.885, 0.968,
                         1.051, 1.134, 1.217, 1.3],
                coord_y=.152,
-               time_start=timedelta(milliseconds=5)),
+               time_start=timedelta(milliseconds=10)),
 
         Rocket(coord_x=[0.075, 0.148, 0.221, 0.294, 0.367, 0.44,
                         0.513, 0.586, 0.659, 0.732, 0.805, 0.878,
                         0.951, 1.024, 1.097, 1.17],
                coord_y=.099,
-               time_start=timedelta(milliseconds=30))
+               time_start=timedelta(milliseconds=35))
     ]
 
-    flight_time = timedelta(seconds=10)
+    flight_time = timedelta(milliseconds=60)
     current = timedelta(milliseconds=0)
     STEP = timedelta(milliseconds=1)
 
-    data = Data(rockets)
+    data = Data()
     data.recalc_data(timedelta(seconds=0))
 
-    with open("result.csv", "w", encoding="utf-8") as file:
+    with open(f"RocketMoment, {datetime.now().strftime('date [%d-%m-%Y], time [%H.%M.%S]')}.csv",
+              "w", encoding="utf-8") as file:
 
         print(SEPARATOR.join(map(str, data.__dict__.keys())).replace("_", " "), file=file)
 
@@ -170,7 +173,8 @@ if __name__ == '__main__':
             else:
                 data.recalc_data(current)
 
-            print(SEPARATOR.join(map(str, data.__dict__.values())).replace(".", ","), file=file)
+            print(SEPARATOR.join(map(str, map(lambda x: x if type(x) == timedelta else round(x, 4),
+                                              data.__dict__.values()))), file=file)
             current = current + STEP
 
     print("Program completed!")
