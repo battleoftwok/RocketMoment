@@ -170,5 +170,5 @@ if __name__ == '__main__':
             else:
                 data.recalc_data(current)
 
-            print(SEPARATOR.join(map(str, data.__dict__.values())), file=file)
+            print(SEPARATOR.join(map(str, data.__dict__.values())).replace(".", ","), file=file)
             current = current + STEP
