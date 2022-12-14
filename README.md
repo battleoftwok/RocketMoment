@@ -1,6 +1,8 @@
 # RocketMoment
 Расчёт влияния выпуска ракет на момент самолёта.
 
+![result_plots.png](result_plots.png)
+
 ## Инструкция по использованию:
 
    1. Установите python. Скачать его можно по этой [ссылке](https://www.python.org/downloads/);
