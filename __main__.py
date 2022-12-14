@@ -1,5 +1,9 @@
 from dataclasses import dataclass
-from datetime import timedelta, datetime
+from datetime import timedelta
+from plotly.offline import plot
+import plotly.graph_objects as go
+import pandas as pd
+from plotly.subplots import make_subplots
 
 SEPARATOR = ";"
 
@@ -95,6 +99,9 @@ class Data:
 
 @dataclass(repr=True)
 class Rocket:
+
+    # todo: продолжительность полёта напрямую зависит от кол-ва элементов в списке
+    # todo: с координатами траектории ракеты, а координаты задаются вручную...
     coord_x: list
     coord_y: float
     time_start: timedelta
@@ -133,6 +140,26 @@ class Rocket:
             cur_data.rocket_launch_counter += 1
 
 
+def plot_data():
+
+    df = pd.read_csv("RocketMoment.csv", delimiter=SEPARATOR)
+
+    ROW = 17
+    COL = 2
+
+    fig = make_subplots(
+        rows=ROW, cols=COL,
+        column_widths=[0.25] * COL,
+        row_heights=[0.16] * ROW,
+        specs=[[{"type": "scatter"}, {"type": "bar"}]] * ROW)
+
+    for i in range(1, len(df.columns)):
+        fig.add_trace(go.Scatter(x=df.iloc[:, 0], y=df.iloc[:, i], mode='lines', name=df.columns[i]), row=i, col=1)
+        fig.add_trace(go.Bar(x=df.iloc[:, 0], y=df.iloc[:, i], base=" ", name=df.columns[i]), row=i, col=2)
+
+    plot(fig)
+
+
 if __name__ == '__main__':
 
     CONST_PARAMS = ConstParams()
@@ -158,7 +185,7 @@ if __name__ == '__main__':
     data = Data()
     data.recalc_data(timedelta(seconds=0))
 
-    with open(f"RocketMoment, {datetime.now().strftime('date [%d-%m-%Y], time [%H.%M.%S]')}.csv",
+    with open(f"RocketMoment.csv",
               "w", encoding="utf-8") as file:
 
         print(SEPARATOR.join(map(str, data.__dict__.keys())).replace("_", " "), file=file)
@@ -175,7 +202,10 @@ if __name__ == '__main__':
 
             print(SEPARATOR.join(map(str, map(lambda x: x if type(x) == timedelta else round(x, 4),
                                               data.__dict__.values()))), file=file)
+
             current = current + STEP
 
-    print("Program completed!")
-    input("Press Enter to exit... ")
+    plot_data()
+
+    # print("Program completed!")
+    # input("Press Enter to exit... ")
