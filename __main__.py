@@ -185,6 +185,8 @@ if __name__ == '__main__':
     data = Data()
     data.recalc_data(timedelta(seconds=0))
 
+    data.__dict__.pop("time_point")
+
     with open(f"RocketMoment.csv",
               "w", encoding="utf-8") as file:
 
@@ -199,6 +201,8 @@ if __name__ == '__main__':
                 flag[0].consider_moment(data, current)
             else:
                 data.recalc_data(current)
+
+            data.__dict__.pop("time_point")
 
             print(SEPARATOR.join(map(str, map(lambda x: x if type(x) == timedelta else round(x, 4),
                                               data.__dict__.values()))), file=file)
