@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import timedelta
 from plotly.offline import plot
 import plotly.graph_objects as go
-import pandas as pd
+from pandas import read_csv
 from plotly.subplots import make_subplots
 
 SEPARATOR = ";"
@@ -10,7 +10,6 @@ SEPARATOR = ";"
 
 @dataclass
 class ConstParams:
-
     """
     Константы, используемые в расчёте
     """
@@ -67,8 +66,8 @@ class Data:
         self.rocket_moment = 0
         self.general_moment = self.calc_general_moment()
 
-    def calc_airplane_moment_inertia(self,):
-        return (self.airplane_moment_inertia_radius ** 2) *\
+    def calc_airplane_moment_inertia(self, ):
+        return (self.airplane_moment_inertia_radius ** 2) * \
             (CONST_PARAMS.airplane_weight - self.rocket_launch_counter *
              (CONST_PARAMS.var_part_weight + self.weight_cur_rocket))
 
@@ -91,15 +90,14 @@ class Data:
 
     def calc_general_moment(self):
         return self.rocket_moment + \
-               self.airplane_attack_angle * CONST_PARAMS.m_alpha_z * (CONST_PARAMS.q * CONST_PARAMS.wing_area *
-                                                                      CONST_PARAMS.b_a / CONST_PARAMS.gravity) + \
-               self.elevator_angle * CONST_PARAMS.m_delta_z * (CONST_PARAMS.q * CONST_PARAMS.wing_area *
-                                                               CONST_PARAMS.b_a / CONST_PARAMS.gravity)
+            self.airplane_attack_angle * CONST_PARAMS.m_alpha_z * (CONST_PARAMS.q * CONST_PARAMS.wing_area *
+                                                                   CONST_PARAMS.b_a / CONST_PARAMS.gravity) + \
+            self.elevator_angle * CONST_PARAMS.m_delta_z * (CONST_PARAMS.q * CONST_PARAMS.wing_area *
+                                                            CONST_PARAMS.b_a / CONST_PARAMS.gravity)
 
 
 @dataclass(repr=True)
 class Rocket:
-
     # todo: продолжительность полёта напрямую зависит от кол-ва элементов в списке
     # todo: с координатами траектории ракеты, а координаты задаются вручную...
     coord_x: list
@@ -122,8 +120,9 @@ class Rocket:
         cur_data.time_point = time
         cur_data.millisecond = 1000 * cur_data.time_point.total_seconds()
         time_diff = time - self.time_start
-        cur_data.tube_moment_inertia_radius = self.coord_y ** 2 + \
-                                              self.coord_x[int(1000 * time_diff.total_seconds())] ** 2
+        cur_data.tube_moment_inertia_radius = self.coord_y ** 2 + self.coord_x[int(1000 *
+                                                                                   time_diff.total_seconds())] ** 2
+
         cur_data.weight_cur_rocket = self.weight
         cur_data.rocket_moment_inertia = cur_data.tube_moment_inertia_radius * CONST_PARAMS.MPADS_weight
         cur_data.airplane_moment_inertia = cur_data.calc_airplane_moment_inertia()
@@ -141,8 +140,7 @@ class Rocket:
 
 
 def plot_data():
-
-    df = pd.read_csv("RocketMoment.csv", delimiter=SEPARATOR)
+    df = read_csv("RocketMoment.csv", delimiter=SEPARATOR)
 
     ROW = 17
     COL = 2
